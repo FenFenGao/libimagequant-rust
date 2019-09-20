@@ -196,7 +196,7 @@ impl Attributes {
 
 /// Start here: creates new handle for library configuration
 pub fn new() -> Attributes {
-    Attributes::new()
+    Attributes::new().expect("SSE-capable CPU is required for this build.")
 }
 
 impl<'a> Histogram<'a> {
@@ -465,7 +465,7 @@ unsafe impl<'a> Send for Histogram<'a> {}
 
 #[test]
 fn takes_rgba() {
-    let liq = Attributes::new();
+    let liq = Attributes::new().unwrap();
 
     #[allow(dead_code)]
     #[derive(Copy, Clone)]
@@ -489,7 +489,7 @@ fn takes_rgba() {
 
 #[test]
 fn histogram() {
-    let attr = Attributes::new();
+    let attr = Attributes::new().unwrap();
     let mut hist = attr.new_histogram();
 
     let bitmap1 = vec![0u8; 4];
@@ -521,7 +521,7 @@ fn poke_it() {
     fakebitmap[2] = 0x77;
 
     // Configure the library
-    let mut liq = Attributes::new();
+    let mut liq = Attributes::new().unwrap();
     liq.set_speed(5);
     liq.set_quality(70, 99);
     liq.set_min_posterization(1);
@@ -565,7 +565,7 @@ fn set_importance_map() {
 
 #[test]
 fn thread() {
-    let liq = Attributes::new();
+    let liq = Attributes::new().unwrap();
     std::thread::spawn(move || {
         let b = vec![0u8;4];
         liq.new_image(&b, 1, 1, 0.).unwrap();
