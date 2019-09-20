@@ -290,7 +290,7 @@ impl<'bitmap> Image<'bitmap> {
             return Err(LIQ_BUFFER_TOO_SMALL);
         }
         unsafe {
-            match ffi::liq_image_create_rgba(&*attr.handle, bitmap.as_ptr(), width as c_int, height as c_int, gamma) {
+            match ffi::liq_image_create_rgba(&*attr.handle, bitmap.as_ptr() as *const u8, width as c_int, height as c_int, gamma) {
                 h if !h.is_null() => {
                     Ok(Image {
                         handle: h,
