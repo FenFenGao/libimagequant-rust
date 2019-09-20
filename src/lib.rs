@@ -94,10 +94,14 @@ impl Attributes {
     /// New handle for library configuration
     ///
     /// See also `new_image()`
-    pub fn new() -> Self {
+    pub fn new() -> Option<Self> {
         let handle = unsafe { ffi::liq_attr_create() };
-        assert!(!handle.is_null(), "SSE-capable CPU is required for this build.");
-        Attributes { handle: handle }
+        // assert!(!handle.is_null(), "SSE-capable CPU is required for this build.");
+        if handle.is_null() {
+            None
+        } else {
+            Some(Attributes { handle: handle })
+        }
     }
 
     /// It's better to use `set_quality()`
@@ -266,6 +270,33 @@ impl<'bitmap> Image<'bitmap> {
         unsafe {
             match ffi::liq_image_create_custom(&*attr.handle, mem::transmute(convert_row_fn), user_data as *mut _, width as c_int, height as c_int, gamma) {
                 handle if !handle.is_null() => Ok(Image {handle, _marker: marker::PhantomData}),
+                _ => {
+                    Err(LIQ_INVALID_POINTER)
+                }
+            }
+        }
+    }
+
+    /// A wrapper of liq_image_create_rgba().
+    /// Assume that there is no stride in pixels.
+    pub fn new_rgba<PixelType: Copy>(attr: &Attributes, bitmap: &'bitmap [PixelType], width: usize, height: usize, gamma: f64) -> Result<Self, liq_error> {
+        let bytes_per_pixel = mem::size_of::<PixelType>();
+        match bytes_per_pixel {
+            1 | 4 => {}
+            _ => return Err(LIQ_UNSUPPORTED),
+        }
+        if bitmap.len() * bytes_per_pixel < width * height * 4 {
+            eprintln!("Buffer length is {}×{} bytes, which is not enough for {}×{}×4 RGBA bytes", bitmap.len(), bytes_per_pixel, width, height);
+            return Err(LIQ_BUFFER_TOO_SMALL);
+        }
+        unsafe {
+            match ffi::liq_image_create_rgba(&*attr.handle, bitmap.as_ptr(), width as c_int, height as c_int, gamma) {
+                h if !h.is_null() => {
+                    Ok(Image {
+                        handle: h,
+                        _marker: marker::PhantomData,
+                    })
+                },
                 _ => {
                     Err(LIQ_INVALID_POINTER)
                 }
